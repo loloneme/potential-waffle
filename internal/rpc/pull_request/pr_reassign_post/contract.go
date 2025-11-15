@@ -1,3 +1,5 @@
+//go:generate mockgen -source=contract.go -destination=mocks/contract.go -package=mocks
+
 package pr_reassign_post
 
 import (

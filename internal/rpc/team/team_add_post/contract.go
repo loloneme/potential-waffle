@@ -1,3 +1,5 @@
+//go:generate mockgen -source=contract.go -destination=mocks/contract.go -package=mocks
+
 package team_add_post
 
 import (

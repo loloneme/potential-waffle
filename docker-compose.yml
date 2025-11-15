@@ -50,7 +50,6 @@ services:
       PG_HOST: postgres
       PG_PORT: 5432
       PG_DATABASE: reviewers
-      API_KEY: ${API_KEY}
     restart: unless-stopped
     networks:
       - internal

@@ -8,6 +8,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/repository/pull_request"
+	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/repository/user"
 	rpc_errors "github.com/loloneme/potential-waffle/internal/rpc/errors"
 )
 
@@ -42,12 +43,27 @@ func (s *Service) ReassignReviewer(ctx context.Context, prID, oldReviewerID stri
 
 	teamName, err := s.userRepo.GetUserTeamName(ctx, oldReviewerID)
 	if err != nil {
+		if errors.Is(err, user.ErrNotFound) {
+			return models.PullRequest{}, "", rpc_errors.NewNotFound("reviewer not found")
+		}
 		return models.PullRequest{}, "", fmt.Errorf("get reviewer team: %w", err)
 	}
 
 	currentReviewers, err := s.prRepo.GetPullRequestReviewers(ctx, prID)
 	if err != nil {
 		return models.PullRequest{}, "", fmt.Errorf("get current reviewers: %w", err)
+	}
+
+	// Проверяем, что oldReviewerID действительно назначен на PR
+	isAssigned := false
+	for _, reviewerID := range currentReviewers {
+		if reviewerID == oldReviewerID {
+			isAssigned = true
+			break
+		}
+	}
+	if !isAssigned {
+		return models.PullRequest{}, "", rpc_errors.NewNotAssigned("reviewer is not assigned to this PR")
 	}
 
 	excludeIDs := []string{oldReviewerID, pr.AuthorID}
@@ -85,6 +101,9 @@ func (s *Service) ReassignReviewer(ctx context.Context, prID, oldReviewerID stri
 	var reassignedPR models.PullRequest
 	reassignedPR, err = s.prRepo.GetPRByID(ctx, prID)
 	if err != nil {
+		if errors.Is(err, pull_request.ErrPRNotFound) {
+			return models.PullRequest{}, "", rpc_errors.NewNotFound("PR not found")
+		}
 		return models.PullRequest{}, "", fmt.Errorf("get updated PR: %w", err)
 	}
 

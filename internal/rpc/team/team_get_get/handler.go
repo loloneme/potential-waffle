@@ -8,6 +8,7 @@ import (
 	"github.com/loloneme/potential-waffle/internal/infrastructure/converter"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
 	user_spec "github.com/loloneme/potential-waffle/internal/infrastructure/persistence/specification/user"
+	rpc_errors "github.com/loloneme/potential-waffle/internal/rpc/errors"
 )
 
 type Handler struct {
@@ -25,17 +26,17 @@ func New(userRepo userRepo, teamRepo teamRepo) *Handler {
 func (h *Handler) TeamGetGet(ctx echo.Context, params generated.GetTeamGetParams) error {
 	teamExists, err := h.teamRepo.Exists(ctx.Request().Context(), params.TeamName)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "internal server error")
+		return rpc_errors.RespondInternal(ctx, "")
 	}
 
 	if !teamExists {
-		return ctx.JSON(http.StatusNotFound, "team not found")
+		return rpc_errors.RespondNotFound(ctx, "team not found")
 	}
 
 	spec := user_spec.NewGetUsersByTeamNameSpec(params.TeamName)
 	users, err := h.userRepo.Find(ctx.Request().Context(), spec)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, "internal server error")
+		return rpc_errors.RespondInternal(ctx, "")
 	}
 
 	team := models.Team{

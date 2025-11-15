@@ -30,6 +30,17 @@ func ToOpenAPIPullRequestShort(pr models.PullRequest) *generated.PullRequestShor
 	}
 }
 
+func FromOpenAPIPullRequestCreate(pr *generated.PostPullRequestCreateJSONBody, status generated.PullRequestStatus) *models.PullRequest {
+	return &models.PullRequest{
+		ID:       pr.PullRequestId,
+		Name:     pr.PullRequestName,
+		AuthorID: pr.AuthorId,
+		Status: &models.Status{
+			Name: string(status),
+		},
+	}
+}
+
 func ToStatusEnum(name string) generated.PullRequestStatus {
 	switch name {
 	case "MERGED":
@@ -37,7 +48,7 @@ func ToStatusEnum(name string) generated.PullRequestStatus {
 	case "OPEN":
 		return generated.PullRequestStatusOPEN
 	default:
-		return generated.PullRequestStatusOPEN
+		return ""
 	}
 }
 

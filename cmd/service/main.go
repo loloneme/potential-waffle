@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,10 +36,14 @@ import (
 func main() {
 	ctx := context.Background()
 
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
 	db, err := internal.NewDatabaseConnection(ctx)
 	if err != nil {
-		log.Fatalf("Failed to init database: %v", err)
+		logger.Error(fmt.Sprintf("error connecting to database: %v", err))
+		panic(err)
 	}
+
 	defer db.Close()
 
 	userRepo := user.NewRepository(db)
@@ -69,13 +74,12 @@ func main() {
 	)
 
 	e := echo.New()
-	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	//adapter.RegProtectedAdminRoutes(e)
-
 	e.Use(mw.NewOpenAPIMiddleware(getOpenAPIPath()))
+	e.Use(mw.SlogMiddleware(logger))
+
 	generated.RegisterHandlers(e, serviceAdapter)
 
 	port := os.Getenv("PORT")
@@ -85,9 +89,10 @@ func main() {
 	addr := ":" + port
 
 	go func() {
-		fmt.Printf("Starting reviewers-app HTTP server on %s\n", addr)
+		logger.Info(fmt.Sprintf("Starting reviewers-app HTTP server on %s\n", addr))
 		if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("failed to start server: %v", err)
+			logger.Error(fmt.Sprintf("failed to start server: %v", err))
+			panic(err)
 		}
 	}()
 
@@ -95,13 +100,14 @@ func main() {
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
-	log.Println("Shutting down server...")
+	logger.Info("Shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	if err := e.Shutdown(ctx); err != nil {
-		log.Printf("Server shutdown error: %v", err)
+		logger.Error(fmt.Sprintf("failed to start server: %v", err))
+		panic(err)
 	}
 
 	log.Println("Server stopped")

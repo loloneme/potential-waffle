@@ -1,0 +1,24 @@
+version: "2"
+run:
+  concurrency: 8
+  go: ""
+  tests: true
+output:
+  format: line-number:lint.txt
+  uniq-by-line: false
+linters:
+  enable:
+    - bodyclose
+    - contextcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+  exclusions:
+    generated: lax
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  exclusions:
+    generated: lax

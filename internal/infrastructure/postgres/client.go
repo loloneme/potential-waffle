@@ -41,6 +41,8 @@ func NewFromConfig(ctx context.Context) (*sqlx.DB, error) {
 		cfg.Host, cfg.Port, cfg.Database, cfg.User, cfg.Password, cfg.SSLMode,
 	)
 
+	fmt.Println(dsn)
+
 	db, err := sqlx.Open("pgx", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open postgres: %w", err)
