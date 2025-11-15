@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: reviewers
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  flyway:
+    image: flyway/flyway:11.14.0
+    container_name: flyway_migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations/postgres:/flyway/sql
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/reviewers
+      FLYWAY_USER: postgres
+      FLYWAY_PASSWORD: postgres
+      FLYWAY_CONNECT_RETRIES: 60
+    command: -connectRetries=60 migrate
+    working_dir: /flyway
+    networks:
+      - internal
+
+  app:
+    build: .
+    container_name: reviewers_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_DATABASE: reviewers
+      API_KEY: ${API_KEY}
+    restart: unless-stopped
+    networks:
+      - internal
+
+
+volumes:
+  postgres_data:
+
+networks:
+  internal:

@@ -7,11 +7,13 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/jmoiron/sqlx"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Config struct {
 	Host     string `env:"PG_HOST" envDefault:"localhost"`
-	Port     string `env:"PG_PORT" envDefault:"5432"`
+	Port     int    `env:"PG_PORT" envDefault:"5432"`
 	User     string `env:"PG_USER" envDefault:"postgres"`
 	Password string `env:"PG_PASSWORD" envDefault:"postgres"`
 	Database string `env:"PG_DATABASE" envDefault:"reviewers"`

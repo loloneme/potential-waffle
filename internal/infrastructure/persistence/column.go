@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+const (
+	allFields = "*"
+)
+
 type Columns struct {
 	readable []string
 	writable []string
@@ -21,8 +25,24 @@ func NewColumns(readable []string, writable []string, alias, idField string) *Co
 	}
 }
 
-func (c *Columns) ForSelect() []string {
-	return c.readable
+func (c *Columns) ForSelect(rawFields []string) []string {
+	if len(rawFields) == 0 {
+		return c.readable
+	}
+
+	fields := make([]string, 0, len(c.readable))
+	for _, rawField := range rawFields {
+		if rawField == allFields {
+			fields = append(fields, c.readable...)
+		} else if rawField != c.alias+"."+allFields {
+			fields = append(fields, rawField)
+		} else {
+			for _, field := range c.readable {
+				fields = append(fields, c.alias+"."+field)
+			}
+		}
+	}
+	return fields
 }
 
 func (c *Columns) ForInsert() []string {
@@ -31,6 +51,10 @@ func (c *Columns) ForInsert() []string {
 
 func (c *Columns) GetIDField() string {
 	return c.idField
+}
+
+func (c *Columns) GetAlias() string {
+	return c.alias
 }
 
 func (c *Columns) OnConflict() string {

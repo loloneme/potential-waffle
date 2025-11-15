@@ -1,24 +1,30 @@
 package pr_spec
 
-import sq "github.com/Masterminds/squirrel"
+import (
+	sq "github.com/Masterminds/squirrel"
+	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
+)
 
 type SetStatusSpecification struct {
-	statusID      int64
+	Status        *models.Status
 	pullRequestID string
 }
 
-func NewSetStatusSpecification(statusID int64, pullRequestID string) *SetStatusSpecification {
+func NewSetStatusSpecification(status *models.Status, pullRequestID string) *SetStatusSpecification {
 	return &SetStatusSpecification{
-		statusID:      statusID,
+		Status:        status,
 		pullRequestID: pullRequestID,
 	}
 }
 
 func (s *SetStatusSpecification) GetSetValues() map[string]interface{} {
-	return map[string]interface{}{
-		"status_id": s.statusID,
-		"merged_at": sq.Expr("COALESCE(merged_at, NOW())"),
+	result := map[string]interface{}{
+		"status_id": s.Status.ID,
 	}
+	if s.Status.Name == "MERGED" {
+		result["merged_at"] = sq.Expr("COALESCE(merged_at, NOW())")
+	}
+	return result
 }
 
 func (s *SetStatusSpecification) GetRule(builder sq.UpdateBuilder) sq.UpdateBuilder {

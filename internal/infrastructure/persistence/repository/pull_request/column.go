@@ -5,14 +5,14 @@ var (
 		"pr_id",
 		"pr_name",
 		"author_id",
-		"status",
+		"status_id",
 	}
 
 	readableColumns = []string{
 		"pr_id",
 		"pr_name",
 		"author_id",
-		"status",
+		"status_id",
 		"created_at",
 		"merged_at",
 	}

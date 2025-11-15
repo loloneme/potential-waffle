@@ -7,7 +7,7 @@ type SetIsActiveSpecification struct {
 	isActive bool
 }
 
-func newSetIsActiveSpecification(userID string, isActive bool) *SetIsActiveSpecification {
+func NewSetIsActiveSpecification(userID string, isActive bool) *SetIsActiveSpecification {
 	return &SetIsActiveSpecification{
 		userID:   userID,
 		isActive: isActive,

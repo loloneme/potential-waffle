@@ -2,9 +2,15 @@ package create_pr
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
+	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/specification/status"
+)
+
+const (
+	numberOfReviewers = 2
 )
 
 type Service struct {
@@ -22,19 +28,37 @@ func New(userRepo userRepo, prRepo prRepo) *Service {
 func (s *Service) CreatePR(ctx context.Context, pr *models.PullRequest) (models.PullRequest, error) {
 	var createdPR models.PullRequest
 
-	err := s.repo.WithTx(ctx, func(tx *sqlx.Tx) error {
-		statusID, _ := s.repo.GetStatusID(ctx, tx, "OPEN")
-		pr.StatusID = statusID
+	err := s.prRepo.WithTx(ctx, func(ctx context.Context, tx *sqlx.Tx) error {
+		foundStatus, err := s.prRepo.FindStatus(ctx, status.NewGetStatusByNameSpecification(pr.Status.Name))
+		if err != nil {
+			return fmt.Errorf("find status: %w", err)
+		}
+		pr.StatusID = foundStatus.ID
 
-		created, _ := s.repo.insertPullRequest(ctx, tx, pr)
+		created, err := s.prRepo.InsertPullRequest(ctx, tx, pr)
+		if err != nil {
+			return fmt.Errorf("insert pull request: %w", err)
+		}
 		createdPR = created
+		createdPR.Status = foundStatus
 
-		teamName, _ := s.repo.GetTeamName(ctx, tx, pr.AuthorID)
+		teamName, err := s.userRepo.GetUserTeamName(ctx, pr.AuthorID)
+		if err != nil {
+			return fmt.Errorf("get author team: %w", err)
+		}
 
-		spec := NewGetAvailableReviewersSpecification([]string{pr.AuthorID}, teamName, 2)
-		reviewers, _ := s.repo.FindReviewers(ctx, tx, spec)
+		reviewers, err := s.prRepo.GetAvailableReviewers(ctx, teamName, []string{pr.AuthorID}, numberOfReviewers)
+		if err != nil {
+			return fmt.Errorf("get available reviewers: %w", err)
+		}
 
-		return s.repo.InsertReviewers(ctx, tx, pr.ID, reviewers)
+		if err := s.prRepo.InsertReviewers(ctx, tx, pr.ID, reviewers); err != nil {
+			return fmt.Errorf("insert reviewers: %w", err)
+		}
+
+		createdPR.Reviewers = reviewers
+
+		return nil
 	})
 
 	return createdPR, err

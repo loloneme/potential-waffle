@@ -3,12 +3,13 @@ package models
 import "time"
 
 type PullRequest struct {
-	ID        string     `db:"pr_id"`
-	Name      string     `db:"pr_name"`
-	AuthorID  string     `db:"author_id_id"`
-	StatusID  int64      `db:"pr_status_id"`
+	ID       string `db:"pr_id"`
+	Name     string `db:"pr_name"`
+	AuthorID string `db:"author_id"`
+	StatusID int64  `db:"status_id"`
+	//StatusName string     `db:"-"`
 	Status    *Status    `db:"-"`
-	CreatedAt time.Time  `db:"created_at"`
+	CreatedAt *time.Time `db:"created_at"`
 	MergedAt  *time.Time `db:"merged_at"`
 	Reviewers []string   `db:"-"`
 }

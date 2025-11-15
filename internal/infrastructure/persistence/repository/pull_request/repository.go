@@ -1,6 +1,8 @@
 package pull_request
 
 import (
+	"context"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence"
 )
@@ -13,7 +15,7 @@ const (
 
 const (
 	reviewersTableName = "reviewers"
-	statusTableName    = "status"
+	statusTableName    = "statuses"
 	usersTableName     = "users"
 )
 
@@ -57,4 +59,18 @@ func NewRepository(db *sqlx.DB) *Repository {
 		reviewerColumns:    rCols,
 		statusColumns:      sCols,
 	}
+}
+
+func (r *Repository) WithTx(ctx context.Context, fn func(ctx context.Context, tx *sqlx.Tx) error) error {
+	tx, err := r.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if err := fn(ctx, tx); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }

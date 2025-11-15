@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
 )
 
@@ -41,7 +42,7 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (models.Use
 	var user models.User
 
 	sqlStr, params, err := st.
-		Select(r.columns.ForSelect()...).
+		Select(r.columns.ForSelect(nil)...).
 		From(r.tableName).
 		Where(sq.Eq{r.columns.GetIDField(): userID}).
 		ToSql()
@@ -61,14 +62,34 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (models.Use
 	return user, nil
 }
 
-func (r *Repository) UpsertUsers(ctx context.Context, users []models.User) ([]models.User, error) {
-	if len(users) == 0 {
-		return nil, nil
+func (r *Repository) GetUserTeamName(ctx context.Context, userID string) (string, error) {
+	var res string
+
+	queryBuilder := st.
+		Select("team_name").From(r.tableName).
+		Where(sq.Eq{"user_id": userID})
+
+	sqlStr, params, err := queryBuilder.ToSql()
+
+	if err != nil {
+		return "", fmt.Errorf("build find users query: %w", err)
 	}
 
-	tx, err := r.db.BeginTxx(ctx, nil)
+	err = r.db.GetContext(ctx, &res, sqlStr, params...)
+
 	if err != nil {
-		return nil, fmt.Errorf("begin transaction: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return res, ErrNotFound
+		}
+		return res, fmt.Errorf("exec find users: %w", err)
+	}
+
+	return res, nil
+}
+
+func (r *Repository) UpsertUsers(ctx context.Context, tx *sqlx.Tx, users []models.User) ([]models.User, error) {
+	if len(users) == 0 {
+		return nil, nil
 	}
 
 	builder := st.
@@ -84,18 +105,12 @@ func (r *Repository) UpsertUsers(ctx context.Context, users []models.User) ([]mo
 		ToSql()
 
 	if err != nil {
-		tx.Rollback()
 		return nil, fmt.Errorf("build upsert users query: %w", err)
 	}
 
 	var result []models.User
 	if err := tx.SelectContext(ctx, &result, sqlStr, params...); err != nil {
-		tx.Rollback()
 		return nil, fmt.Errorf("upsert users: %w", err)
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
 	}
 
 	return result, nil

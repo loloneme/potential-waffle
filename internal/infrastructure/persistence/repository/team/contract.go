@@ -3,10 +3,13 @@ package team
 import (
 	"context"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
 )
 
 type teamRepository interface {
-	CreateTeam(ctx context.Context, team models.Team) (models.Team, error)
+	WithTx(ctx context.Context, fn func(ctx context.Context, tx *sqlx.Tx) error) error
+
+	CreateTeam(ctx context.Context, tx *sqlx.Tx, team models.Team) (models.Team, error)
 	FindTeamByID(ctx context.Context, teamName string) (models.Team, error)
 }

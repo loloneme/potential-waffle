@@ -8,7 +8,16 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
+	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/specification/reviewer"
 )
+
+func (r *Repository) GetAvailableReviewers(ctx context.Context, teamName string, excludeIDs []string, limit int) ([]string, error) {
+	return r.FindReviewers(ctx, reviewer.NewGetAvailableReviewersSpecification(teamName, excludeIDs, limit, r.usersTableName))
+}
+
+func (r *Repository) GetPullRequestReviewers(ctx context.Context, prID string) ([]string, error) {
+	return r.FindReviewers(ctx, reviewer.NewGetPRReviewersSpecification(prID, r.reviewersTableName))
+}
 
 func (r *Repository) InsertReviewers(ctx context.Context, tx *sqlx.Tx, prID string, reviewers []string) error {
 	if len(reviewers) == 0 {
@@ -16,11 +25,11 @@ func (r *Repository) InsertReviewers(ctx context.Context, tx *sqlx.Tx, prID stri
 	}
 
 	builder := st.
-		Insert(reviewersTable).
+		Insert(r.reviewersTableName).
 		Columns(r.reviewerColumns.ForInsert()...)
 
-	for _, reviewer := range reviewers {
-		builder = builder.Values(prID, reviewer)
+	for _, r := range reviewers {
+		builder = builder.Values(prID, r)
 	}
 
 	query, args, err := builder.
@@ -61,24 +70,15 @@ func (r *Repository) ReassignReviewer(ctx context.Context, tx *sqlx.Tx, prID, ol
 	removed, err := r.deleteReviewer(ctx, tx, prID, oldReviewerID)
 
 	if err != nil {
-		_ = tx.Rollback()
-
 		return err
 	}
 
 	if !removed {
-		_ = tx.Rollback()
-
 		return ErrReviewerNotAssigned
 	}
 
 	if err := r.InsertReviewers(ctx, tx, prID, []string{newReviewerID}); err != nil {
-		_ = tx.Rollback()
 		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("commit transaction: %w", err)
 	}
 
 	return nil
@@ -86,7 +86,7 @@ func (r *Repository) ReassignReviewer(ctx context.Context, tx *sqlx.Tx, prID, ol
 
 func (r *Repository) deleteReviewer(ctx context.Context, tx *sqlx.Tx, prID, reviewerID string) (bool, error) {
 	query, args, err := st.
-		Delete(reviewersTable).
+		Delete(r.reviewersTableName).
 		Where(sq.Eq{
 			"pr_id":       prID,
 			"reviewer_id": reviewerID,
