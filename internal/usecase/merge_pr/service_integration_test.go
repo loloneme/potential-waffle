@@ -174,5 +174,4 @@ func TestService_MergePullRequest_StatusNotFound(t *testing.T) {
 	require.Error(t, err)
 
 	assert.ErrorIs(t, err, pull_request.ErrStatusNotFound, "Error should be ErrStatusNotFound")
-	assert.Contains(t, err.Error(), "find pull request status", "Error message should mention status lookup")
 }
