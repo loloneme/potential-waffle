@@ -2,6 +2,7 @@ package team
 
 import (
 	"context"
+	"log"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence"
@@ -34,7 +35,11 @@ func (r *Repository) WithTx(ctx context.Context, fn func(ctx context.Context, tx
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			log.Printf("rollback transaction: %v", err)
+		}
+	}()
 
 	if err := fn(ctx, tx); err != nil {
 		return err

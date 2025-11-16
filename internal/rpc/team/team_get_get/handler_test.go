@@ -16,7 +16,6 @@ import (
 
 func TestHandler_TeamGetGet(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -46,10 +45,8 @@ func TestHandler_TeamGetGet(t *testing.T) {
 			Find(gomock.Any(), gomock.Any()).
 			Return(expectedUsers, nil)
 
-		// Execute
 		err := handler.TeamGetGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -61,7 +58,6 @@ func TestHandler_TeamGetGet(t *testing.T) {
 	})
 
 	t.Run("team not found", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -82,10 +78,8 @@ func TestHandler_TeamGetGet(t *testing.T) {
 			Exists(gomock.Any(), "team-1").
 			Return(false, nil)
 
-		// Execute
 		err := handler.TeamGetGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 
@@ -96,7 +90,6 @@ func TestHandler_TeamGetGet(t *testing.T) {
 	})
 
 	t.Run("internal error - team exists check fails", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -117,10 +110,8 @@ func TestHandler_TeamGetGet(t *testing.T) {
 			Exists(gomock.Any(), "team-1").
 			Return(false, assert.AnError)
 
-		// Execute
 		err := handler.TeamGetGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})

@@ -16,9 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var (
-	validReassignJSON = `{"pull_request_id":"pr-1001","old_user_id":"u2"}`
-)
+var validReassignJSON = `{"pull_request_id":"pr-1001","old_user_id":"u2"}`
 
 func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(http.MethodPost, "/pullRequest/reassign", strings.NewReader(body))
@@ -29,7 +27,6 @@ func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.Respons
 
 func TestHandler_PRReassignPost(t *testing.T) {
 	t.Run("successful reassign", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -53,10 +50,8 @@ func TestHandler_PRReassignPost(t *testing.T) {
 			ReassignReviewer(gomock.Any(), "pr-1001", "u2").
 			Return(expectedPR, "u4", nil)
 
-		// Execute
 		err := handler.PRReassignPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -72,7 +67,6 @@ func TestHandler_PRReassignPost(t *testing.T) {
 	})
 
 	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -82,10 +76,8 @@ func TestHandler_PRReassignPost(t *testing.T) {
 		e := echo.New()
 		c, rec := makeTestRequest(e, "invalid json")
 
-		// Execute
 		err := handler.PRReassignPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -96,7 +88,6 @@ func TestHandler_PRReassignPost(t *testing.T) {
 	})
 
 	t.Run("service error - PR not found", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -110,10 +101,8 @@ func TestHandler_PRReassignPost(t *testing.T) {
 			ReassignReviewer(gomock.Any(), "pr-1001", "u2").
 			Return(models.PullRequest{}, "", rpc_errors.NewNotFound("PR not found"))
 
-		// Execute
 		err := handler.PRReassignPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 
@@ -124,7 +113,6 @@ func TestHandler_PRReassignPost(t *testing.T) {
 	})
 
 	t.Run("service error - PR merged", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -138,10 +126,8 @@ func TestHandler_PRReassignPost(t *testing.T) {
 			ReassignReviewer(gomock.Any(), "pr-1001", "u2").
 			Return(models.PullRequest{}, "", rpc_errors.NewPRMerged("cannot reassign on merged PR"))
 
-		// Execute
 		err := handler.PRReassignPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusConflict, rec.Code)
 

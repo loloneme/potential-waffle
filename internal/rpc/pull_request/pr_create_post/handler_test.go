@@ -16,9 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var (
-	validPRJSON = `{"pull_request_id":"pr-1001","pull_request_name":"Add search","author_id":"u1"}`
-)
+var validPRJSON = `{"pull_request_id":"pr-1001","pull_request_name":"Add search","author_id":"u1"}`
 
 func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(http.MethodPost, "/pullRequest/create", strings.NewReader(body))
@@ -29,7 +27,6 @@ func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.Respons
 
 func TestHandler_PRCreatePost(t *testing.T) {
 	t.Run("successful creation", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -53,10 +50,8 @@ func TestHandler_PRCreatePost(t *testing.T) {
 			CreatePR(gomock.Any(), gomock.Any()).
 			Return(expectedPR, nil)
 
-		// Execute
 		err := handler.PRCreatePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, rec.Code)
 
@@ -73,7 +68,6 @@ func TestHandler_PRCreatePost(t *testing.T) {
 	})
 
 	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -83,10 +77,8 @@ func TestHandler_PRCreatePost(t *testing.T) {
 		e := echo.New()
 		c, rec := makeTestRequest(e, "invalid json")
 
-		// Execute
 		err := handler.PRCreatePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -97,7 +89,6 @@ func TestHandler_PRCreatePost(t *testing.T) {
 	})
 
 	t.Run("service error - not found", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -111,10 +102,8 @@ func TestHandler_PRCreatePost(t *testing.T) {
 			CreatePR(gomock.Any(), gomock.Any()).
 			Return(models.PullRequest{}, rpc_errors.NewNotFound("author not found"))
 
-		// Execute
 		err := handler.PRCreatePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 
@@ -126,7 +115,6 @@ func TestHandler_PRCreatePost(t *testing.T) {
 	})
 
 	t.Run("service error - PR already exists", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -140,10 +128,8 @@ func TestHandler_PRCreatePost(t *testing.T) {
 			CreatePR(gomock.Any(), gomock.Any()).
 			Return(models.PullRequest{}, rpc_errors.NewPRExists("PR already exists"))
 
-		// Execute
 		err := handler.PRCreatePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusConflict, rec.Code)
 

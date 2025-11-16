@@ -23,10 +23,13 @@ import (
 	"github.com/loloneme/potential-waffle/internal/rpc/pull_request/pr_merge_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/pull_request/pr_reassign_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/service/adapter"
+	"github.com/loloneme/potential-waffle/internal/rpc/statistics/statistics_get"
 	"github.com/loloneme/potential-waffle/internal/rpc/team/team_add_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/team/team_get_get"
+	"github.com/loloneme/potential-waffle/internal/rpc/user/users_bulk_deactivate_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/user/users_get_review_get"
 	"github.com/loloneme/potential-waffle/internal/rpc/user/users_set_is_active_post"
+	"github.com/loloneme/potential-waffle/internal/usecase/bulk_deactivate_team"
 	"github.com/loloneme/potential-waffle/internal/usecase/create_pr"
 	"github.com/loloneme/potential-waffle/internal/usecase/create_team"
 	"github.com/loloneme/potential-waffle/internal/usecase/merge_pr"
@@ -44,7 +47,11 @@ func main() {
 		panic(err)
 	}
 
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Error(fmt.Sprintf("error closing database: %v", err))
+		}
+	}()
 
 	userRepo := user.NewRepository(db)
 	teamRepo := team.NewRepository(db)
@@ -54,6 +61,7 @@ func main() {
 	createPullRequestService := create_pr.New(userRepo, prRepo)
 	mergePullRequestService := merge_pr.New(prRepo)
 	reassignPullRequestService := reassign_pr.New(userRepo, prRepo)
+	bulkDeactivateTeamService := bulk_deactivate_team.New(userRepo, prRepo)
 
 	createTeamHandler := team_add_post.New(createTeamService)
 	getTeamHandler := team_get_get.New(userRepo, teamRepo)
@@ -62,6 +70,8 @@ func main() {
 	reassignPullRequestHandler := pr_reassign_post.New(reassignPullRequestService)
 	getUsersReviewHandler := users_get_review_get.New(prRepo)
 	setIsActiveHandler := users_set_is_active_post.New(userRepo)
+	bulkDeactivateHandler := users_bulk_deactivate_post.New(bulkDeactivateTeamService)
+	getStatisticsHandler := statistics_get.New(prRepo)
 
 	serviceAdapter := adapter.NewAdapter(
 		createTeamHandler,
@@ -71,6 +81,8 @@ func main() {
 		reassignPullRequestHandler,
 		getUsersReviewHandler,
 		setIsActiveHandler,
+		bulkDeactivateHandler,
+		getStatisticsHandler,
 	)
 
 	e := echo.New()

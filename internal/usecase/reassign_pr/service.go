@@ -54,7 +54,6 @@ func (s *Service) ReassignReviewer(ctx context.Context, prID, oldReviewerID stri
 		return models.PullRequest{}, "", fmt.Errorf("get current reviewers: %w", err)
 	}
 
-	// Проверяем, что oldReviewerID действительно назначен на PR
 	isAssigned := false
 	for _, reviewerID := range currentReviewers {
 		if reviewerID == oldReviewerID {
@@ -93,7 +92,6 @@ func (s *Service) ReassignReviewer(ctx context.Context, prID, oldReviewerID stri
 		}
 		return nil
 	})
-
 	if err != nil {
 		return models.PullRequest{}, "", err
 	}

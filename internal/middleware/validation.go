@@ -12,7 +12,7 @@ func NewOpenAPIMiddleware(specPath string) echo.MiddlewareFunc {
 	loader := openapi3.NewLoader()
 	doc, err := loader.LoadFromFile(specPath)
 	if err != nil {
-		fmt.Errorf("failed to load OpenAPI spec: %v", err)
+		panic(fmt.Errorf("failed to load OpenAPI spec: %v", err))
 	}
 	return echomw.OapiRequestValidator(doc)
 }

@@ -16,7 +16,6 @@ import (
 
 func TestHandler_UsersGetReviewGet(t *testing.T) {
 	t.Run("successful get", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -55,10 +54,8 @@ func TestHandler_UsersGetReviewGet(t *testing.T) {
 			FindPullRequests(gomock.Any(), gomock.Any()).
 			Return(expectedPRs, nil)
 
-		// Execute
 		err := handler.UsersGetReviewGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -73,7 +70,6 @@ func TestHandler_UsersGetReviewGet(t *testing.T) {
 	})
 
 	t.Run("empty list", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -93,10 +89,8 @@ func TestHandler_UsersGetReviewGet(t *testing.T) {
 			FindPullRequests(gomock.Any(), gomock.Any()).
 			Return([]models.PullRequest{}, nil)
 
-		// Execute
 		err := handler.UsersGetReviewGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -110,7 +104,6 @@ func TestHandler_UsersGetReviewGet(t *testing.T) {
 	})
 
 	t.Run("internal error", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -130,10 +123,8 @@ func TestHandler_UsersGetReviewGet(t *testing.T) {
 			FindPullRequests(gomock.Any(), gomock.Any()).
 			Return(nil, assert.AnError)
 
-		// Execute
 		err := handler.UsersGetReviewGet(c, params)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})

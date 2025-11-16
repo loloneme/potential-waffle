@@ -1,4 +1,4 @@
-.PHONY: help generate-schema docker-build build run generate-mocks test test-docker-up test-docker-down
+.PHONY: help generate-schema docker-build build run generate-mocks test test-docker-up test-docker-down lint
 
 help:
 	@echo Available targets:
@@ -42,3 +42,8 @@ test: docker-test-build
 	@echo Running all tests...
 	@go test ./... -v -count=1 -p 1
 	@make docker-test-down
+
+lint:
+	@echo Running golangci-lint
+	@golangci-lint run
+

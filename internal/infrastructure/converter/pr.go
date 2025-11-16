@@ -10,13 +10,16 @@ func ToOpenAPIPullRequest(pr models.PullRequest) *generated.PullRequest {
 		AssignedReviewers: pr.Reviewers,
 		AuthorId:          pr.AuthorID,
 		CreatedAt:         pr.CreatedAt,
-		MergedAt:          pr.MergedAt,
 		PullRequestId:     pr.ID,
 		PullRequestName:   pr.Name,
 	}
 
 	if pr.Status != nil {
 		res.Status = ToStatusEnum(pr.Status.Name)
+	}
+
+	if pr.MergedAt != nil {
+		res.MergedAt = pr.MergedAt
 	}
 	return res
 }

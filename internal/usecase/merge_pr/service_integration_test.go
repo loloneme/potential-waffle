@@ -57,7 +57,6 @@ func setupTest(t *testing.T) *testEnv {
 func TestService_MergePullRequest_Successful(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -80,7 +79,6 @@ func TestService_MergePullRequest_Successful(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-1"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -104,18 +102,15 @@ func TestService_MergePullRequest_Successful(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Мержим PR
 	mergedPR, err := env.service.MergePullRequest(env.ctx, prID, "MERGED")
 	require.NoError(t, err)
 
-	// Проверяем результат
 	assert.Equal(t, prID, mergedPR.ID)
 	assert.Equal(t, "Test PR", mergedPR.Name)
 	assert.Equal(t, authorID, mergedPR.AuthorID)
 	assert.NotNil(t, mergedPR.Status)
 	assert.Equal(t, "MERGED", mergedPR.Status.Name)
 
-	// Проверяем, что статус действительно изменен в БД
 	prFromDB, err := env.prRepo.GetPRByID(env.ctx, prID)
 	require.NoError(t, err)
 	assert.Equal(t, "MERGED", prFromDB.Status.Name)
@@ -135,7 +130,6 @@ func TestService_MergePullRequest_NotFound(t *testing.T) {
 func TestService_MergePullRequest_StatusNotFound(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team-status-not-found"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -153,7 +147,6 @@ func TestService_MergePullRequest_StatusNotFound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-status-not-found"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -172,17 +165,14 @@ func TestService_MergePullRequest_StatusNotFound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Проверяем, что PR существует
 	exists, err := env.prRepo.PullRequestExists(env.ctx, prID)
 	require.NoError(t, err)
 	require.True(t, exists, "PR should exist")
 
-	// Пытаемся изменить статус на несуществующий статус
 	nonExistentStatus := "NONEXISTENT_STATUS"
 	_, err = env.service.MergePullRequest(env.ctx, prID, nonExistentStatus)
 	require.Error(t, err)
 
-	// Проверяем, что ошибка связана с тем, что статус не найден
 	assert.ErrorIs(t, err, pull_request.ErrStatusNotFound, "Error should be ErrStatusNotFound")
 	assert.Contains(t, err.Error(), "find pull request status", "Error message should mention status lookup")
 }

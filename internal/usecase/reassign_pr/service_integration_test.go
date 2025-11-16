@@ -57,7 +57,6 @@ func setupTest(t *testing.T) *testEnv {
 func TestService_ReassignReviewer_Successful(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -82,7 +81,6 @@ func TestService_ReassignReviewer_Successful(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-1"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -101,24 +99,20 @@ func TestService_ReassignReviewer_Successful(t *testing.T) {
 			return err
 		}
 
-		// Назначаем только одного ревьюера (согласно numberOfReviewers = 1)
 		reviewers := []string{reviewer1ID}
 		return env.prRepo.InsertReviewers(ctx, tx, prID, reviewers)
 	})
 	require.NoError(t, err)
 
-	// Переназначаем ревьюера
 	reassignedPR, newReviewerID, err := env.service.ReassignReviewer(env.ctx, prID, reviewer1ID)
 	require.NoError(t, err)
 
-	// Проверяем результат
 	assert.Equal(t, prID, reassignedPR.ID)
 	assert.NotEqual(t, reviewer1ID, newReviewerID)
 	assert.Contains(t, []string{reviewer2ID, reviewer3ID}, newReviewerID)
 	assert.NotContains(t, reassignedPR.Reviewers, reviewer1ID)
 	assert.Contains(t, reassignedPR.Reviewers, newReviewerID)
 
-	// Проверяем, что ревьюер действительно переназначен в БД
 	reviewers, err := env.prRepo.GetPullRequestReviewers(env.ctx, prID)
 	require.NoError(t, err)
 	assert.Len(t, reviewers, 1)
@@ -141,7 +135,6 @@ func TestService_ReassignReviewer_PRNotFound(t *testing.T) {
 func TestService_ReassignReviewer_PRAlreadyMerged(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team-2"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -162,7 +155,6 @@ func TestService_ReassignReviewer_PRAlreadyMerged(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR со статусом MERGED
 	prID := "pr-2"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -186,7 +178,6 @@ func TestService_ReassignReviewer_PRAlreadyMerged(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Пытаемся переназначить ревьюера для мерженного PR
 	_, _, err = env.service.ReassignReviewer(env.ctx, prID, reviewer1ID)
 	require.Error(t, err)
 	var mergedErr *rpc_errors.PRMergedError
@@ -196,7 +187,6 @@ func TestService_ReassignReviewer_PRAlreadyMerged(t *testing.T) {
 func TestService_ReassignReviewer_ReviewerNotFound(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team-3"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -214,7 +204,6 @@ func TestService_ReassignReviewer_ReviewerNotFound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-3"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -233,7 +222,6 @@ func TestService_ReassignReviewer_ReviewerNotFound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Пытаемся переназначить несуществующего ревьюера
 	nonExistentReviewerID := "non-existent-reviewer"
 	_, _, err = env.service.ReassignReviewer(env.ctx, prID, nonExistentReviewerID)
 	require.Error(t, err)
@@ -244,7 +232,6 @@ func TestService_ReassignReviewer_ReviewerNotFound(t *testing.T) {
 func TestService_ReassignReviewer_ReviewerNotAssigned(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "test-team-4"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -267,7 +254,6 @@ func TestService_ReassignReviewer_ReviewerNotAssigned(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR с одним ревьюером
 	prID := "pr-4"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -286,13 +272,11 @@ func TestService_ReassignReviewer_ReviewerNotAssigned(t *testing.T) {
 			return err
 		}
 
-		// Назначаем только reviewer1ID
 		reviewers := []string{reviewer1ID}
 		return env.prRepo.InsertReviewers(ctx, tx, prID, reviewers)
 	})
 	require.NoError(t, err)
 
-	// Пытаемся переназначить reviewer2ID, который не назначен на PR
 	_, _, err = env.service.ReassignReviewer(env.ctx, prID, reviewer2ID)
 	require.Error(t, err)
 	var notAssignedErr *rpc_errors.NotAssignedError
@@ -302,7 +286,6 @@ func TestService_ReassignReviewer_ReviewerNotAssigned(t *testing.T) {
 func TestService_ReassignReviewer_NoAvailableCandidates(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных: команда с только одним активным пользователем (кроме автора)
 	teamName := "lonely-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -323,7 +306,6 @@ func TestService_ReassignReviewer_NoAvailableCandidates(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-5"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -347,8 +329,6 @@ func TestService_ReassignReviewer_NoAvailableCandidates(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Пытаемся переназначить ревьюера, но нет других доступных кандидатов
-	// (только автор и текущий ревьюер в команде)
 	_, _, err = env.service.ReassignReviewer(env.ctx, prID, reviewer1ID)
 	require.Error(t, err)
 	var noCandidateErr *rpc_errors.NoCandidateError
@@ -358,7 +338,6 @@ func TestService_ReassignReviewer_NoAvailableCandidates(t *testing.T) {
 func TestService_ReassignReviewer_ExcludesInactiveUsers(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных: команда с активными и неактивными пользователями
 	teamName := "mixed-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -383,7 +362,6 @@ func TestService_ReassignReviewer_ExcludesInactiveUsers(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	prID := "pr-6"
 	err = env.prRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		pr := &models.PullRequest{
@@ -407,11 +385,9 @@ func TestService_ReassignReviewer_ExcludesInactiveUsers(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Переназначаем ревьюера
 	reassignedPR, newReviewerID, err := env.service.ReassignReviewer(env.ctx, prID, reviewer1ID)
 	require.NoError(t, err)
 
-	// Проверяем, что назначен только активный ревьюер
 	assert.Equal(t, activeReviewerID, newReviewerID)
 	assert.Contains(t, reassignedPR.Reviewers, activeReviewerID)
 	assert.NotContains(t, reassignedPR.Reviewers, inactiveReviewerID)

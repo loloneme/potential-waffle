@@ -195,20 +195,3 @@ func RespondFromError(ctx echo.Context, err error) error {
 
 	return RespondInternal(ctx, err.Error())
 }
-
-func getStatusCodeForErrorCode(code generated.ErrorResponseErrorCode) int {
-	switch code {
-	case generated.NOTFOUND:
-		return http.StatusNotFound
-	case generated.PREXISTS, generated.PRMERGED, generated.NOTASSIGNED, generated.NOCANDIDATE:
-		return http.StatusConflict
-	case generated.TEAMEXISTS:
-		return http.StatusBadRequest
-	case generated.ErrorResponseErrorCode("BAD_REQUEST"):
-		return http.StatusBadRequest
-	case generated.ErrorResponseErrorCode("INTERNAL"):
-		return http.StatusInternalServerError
-	default:
-		return http.StatusInternalServerError
-	}
-}

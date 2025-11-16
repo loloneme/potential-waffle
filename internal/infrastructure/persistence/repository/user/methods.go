@@ -10,13 +10,12 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
+	user_spec "github.com/loloneme/potential-waffle/internal/infrastructure/persistence/specification/user"
 )
 
 var st = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-var (
-	ErrNotFound = errors.New("user not found")
-)
+var ErrNotFound = errors.New("user not found")
 
 type FindSpecification interface {
 	GetFields() []string
@@ -46,9 +45,8 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (models.Use
 		From(r.tableName).
 		Where(sq.Eq{r.columns.GetIDField(): userID}).
 		ToSql()
-
 	if err != nil {
-		return user, fmt.Errorf("build get user by id: %w", err)
+		return user, err
 	}
 
 	err = r.db.GetContext(ctx, &user, sqlStr, params...)
@@ -56,7 +54,7 @@ func (r *Repository) GetUserByID(ctx context.Context, userID string) (models.Use
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, ErrNotFound
 		}
-		return user, fmt.Errorf("exec get user by id: %w", err)
+		return user, err
 	}
 
 	return user, nil
@@ -70,18 +68,16 @@ func (r *Repository) GetUserTeamName(ctx context.Context, userID string) (string
 		Where(sq.Eq{"user_id": userID})
 
 	sqlStr, params, err := queryBuilder.ToSql()
-
 	if err != nil {
-		return "", fmt.Errorf("build find users query: %w", err)
+		return "", err
 	}
 
 	err = r.db.GetContext(ctx, &res, sqlStr, params...)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, ErrNotFound
 		}
-		return res, fmt.Errorf("exec find users: %w", err)
+		return res, err
 	}
 
 	return res, nil
@@ -103,14 +99,13 @@ func (r *Repository) UpsertUsers(ctx context.Context, tx *sqlx.Tx, users []model
 	sqlStr, params, err := builder.
 		Suffix(r.columns.OnConflict() + " RETURNING *").
 		ToSql()
-
 	if err != nil {
-		return nil, fmt.Errorf("build upsert users query: %w", err)
+		return nil, err
 	}
 
 	var result []models.User
 	if err := tx.SelectContext(ctx, &result, sqlStr, params...); err != nil {
-		return nil, fmt.Errorf("upsert users: %w", err)
+		return nil, err
 	}
 
 	return result, nil
@@ -132,19 +127,17 @@ func (r *Repository) Find(ctx context.Context, spec FindSpecification) ([]models
 		Select(spec.GetFields()...).From(r.tableName)
 
 	sqlStr, params, err := spec.GetRule(queryBuilder).ToSql()
-
 	if err != nil {
-		return nil, fmt.Errorf("build find users query: %w", err)
+		return nil, err
 	}
 
 	var users []models.User
 	err = r.db.SelectContext(ctx, &users, sqlStr, params...)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
 		}
-		return nil, fmt.Errorf("exec find users: %w", err)
+		return nil, err
 	}
 
 	return users, nil
@@ -167,17 +160,45 @@ func (r *Repository) UserUpdate(ctx context.Context, spec UpdateSpecification) (
 
 	sqlStr, params, err := builder.ToSql()
 	if err != nil {
-		return user, fmt.Errorf("build update user: %w", err)
+		return user, err
 	}
 
 	err = r.db.GetContext(ctx, &user, sqlStr, params...)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, ErrNotFound
 		}
-		return user, fmt.Errorf("exec update user: %w", err)
+		return user, err
 	}
 
 	return user, nil
+}
+
+func (r *Repository) BulkDeactivateUsers(ctx context.Context, tx *sqlx.Tx, teamName string, userIDs []string) ([]string, error) {
+	spec := user_spec.NewBulkDeactivateTeamUsersSpecification(teamName, userIDs)
+
+	builder := st.Update(r.tableName)
+
+	for col, val := range spec.GetSetValues() {
+		builder = builder.Set(col, val)
+	}
+
+	builder = spec.GetRule(builder)
+
+	if returning := spec.GetReturningFields(); len(returning) > 0 {
+		builder = builder.Suffix(fmt.Sprintf("RETURNING %s", strings.Join(returning, ",")))
+	}
+
+	sqlStr, params, err := builder.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var deactivatedUserIDs []string
+	err = tx.SelectContext(ctx, &deactivatedUserIDs, sqlStr, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	return deactivatedUserIDs, nil
 }

@@ -4,11 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
-
 	"github.com/loloneme/potential-waffle/internal/infrastructure/persistence/models"
 )
 
@@ -40,13 +38,12 @@ func (r *Repository) CreateTeam(ctx context.Context, tx *sqlx.Tx, team models.Te
 		Values(getValues(team)...).
 		Suffix("RETURNING *").
 		ToSql()
-
 	if err != nil {
-		return res, fmt.Errorf("create team: %w", err)
+		return res, err
 	}
 
 	if err = tx.GetContext(ctx, &res, sqlStr, params...); err != nil {
-		return res, fmt.Errorf("get team: %w", err)
+		return res, err
 	}
 	return res, nil
 }
@@ -69,18 +66,16 @@ func (r *Repository) FindTeamByID(ctx context.Context, teamName string) (models.
 		From(r.tableName).
 		Where(sq.Eq{r.tableName: teamName}).
 		ToSql()
-
 	if err != nil {
-		return res, fmt.Errorf("create team: %w", err)
+		return res, err
 	}
 
 	err = r.db.GetContext(ctx, &res, sqlStr, params...)
-
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return res, ErrNotFound
 		}
-		return res, fmt.Errorf("exec get team: %w", err)
+		return res, err
 	}
 
 	return res, nil

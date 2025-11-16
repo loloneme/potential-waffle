@@ -24,4 +24,15 @@ type pullRequestRepository interface {
 	ReassignReviewer(ctx context.Context, tx *sqlx.Tx, prID, oldReviewerID, newReviewerID string) error
 	GetAvailableReviewers(ctx context.Context, teamName string, excludeIDs []string, limit int) ([]string, error)
 	GetPullRequestReviewers(ctx context.Context, prID string) ([]string, error)
+
+	GetOpenPRsWithReviewers(ctx context.Context, reviewerIDs []string) (map[string][]string, error)
+	GetOpenPRsWithFullInfo(ctx context.Context, deactivatedReviewerIDs []string) (map[string]PRFullInfo, error)
+	BulkReassignReviewers(ctx context.Context, tx *sqlx.Tx, reassignments []PRReassignments) error
+
+	GetStatistics(ctx context.Context) (*Statistics, error)
+}
+
+type PRReassignments struct {
+	PRID          string
+	Reassignments map[string]string
 }

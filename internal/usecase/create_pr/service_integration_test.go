@@ -81,7 +81,6 @@ func TestService_CreatePR_Successful(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем PR
 	pr := &models.PullRequest{
 		ID:       "pr-1",
 		Name:     "Test PR",
@@ -92,7 +91,6 @@ func TestService_CreatePR_Successful(t *testing.T) {
 	createdPR, err := env.service.CreatePR(env.ctx, pr)
 	require.NoError(t, err)
 
-	// Проверяем результат
 	assert.Equal(t, "pr-1", createdPR.ID)
 	assert.Equal(t, "Test PR", createdPR.Name)
 	assert.Equal(t, authorID, createdPR.AuthorID)
@@ -100,9 +98,8 @@ func TestService_CreatePR_Successful(t *testing.T) {
 	assert.Equal(t, "OPEN", createdPR.Status.Name)
 	assert.NotZero(t, createdPR.StatusID)
 	assert.Len(t, createdPR.Reviewers, 2)
-	assert.NotContains(t, createdPR.Reviewers, authorID) // Автор не должен быть ревьюером
+	assert.NotContains(t, createdPR.Reviewers, authorID)
 
-	// Проверяем, что ревьюеры действительно назначены в БД
 	reviewers, err := env.prRepo.GetPullRequestReviewers(env.ctx, pr.ID)
 	require.NoError(t, err)
 	assert.Len(t, reviewers, 2)
@@ -128,7 +125,6 @@ func TestService_CreatePR_AuthorNotFound(t *testing.T) {
 func TestService_CreatePR_NoAvailableReviewers(t *testing.T) {
 	env := setupTest(t)
 
-	// Создаем команду с только одним пользователем (автором)
 	teamName := "lonely-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -162,7 +158,6 @@ func TestService_CreatePR_NoAvailableReviewers(t *testing.T) {
 func TestService_CreatePR_AlreadyExists(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных
 	teamName := "team-2"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -185,7 +180,6 @@ func TestService_CreatePR_AlreadyExists(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Создаем первый PR
 	pr1 := &models.PullRequest{
 		ID:       "pr-4",
 		Name:     "First PR",
@@ -195,7 +189,6 @@ func TestService_CreatePR_AlreadyExists(t *testing.T) {
 	_, err = env.service.CreatePR(env.ctx, pr1)
 	require.NoError(t, err)
 
-	// Пытаемся создать PR с тем же ID
 	pr2 := &models.PullRequest{
 		ID:       "pr-4",
 		Name:     "Duplicate PR",
@@ -211,7 +204,6 @@ func TestService_CreatePR_AlreadyExists(t *testing.T) {
 func TestService_CreatePR_ReviewersAreActiveUsersOnly(t *testing.T) {
 	env := setupTest(t)
 
-	// Подготовка данных: команда с активными и неактивными пользователями
 	teamName := "mixed-team"
 	err := env.teamRepo.WithTx(env.ctx, func(ctx context.Context, tx *sqlx.Tx) error {
 		_, err := env.teamRepo.CreateTeam(ctx, tx, models.Team{TeamName: teamName})
@@ -244,7 +236,6 @@ func TestService_CreatePR_ReviewersAreActiveUsersOnly(t *testing.T) {
 	createdPR, err := env.service.CreatePR(env.ctx, pr)
 	require.NoError(t, err)
 
-	// Проверяем, что назначен только активный ревьюер
 	assert.Len(t, createdPR.Reviewers, 1)
 	assert.Contains(t, createdPR.Reviewers, activeReviewerID)
 	assert.NotContains(t, createdPR.Reviewers, inactiveReviewerID)

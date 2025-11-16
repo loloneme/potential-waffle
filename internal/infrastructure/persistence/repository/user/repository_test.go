@@ -239,7 +239,6 @@ func TestUserRepository_UserUpdate(t *testing.T) {
 	})
 }
 
-// Mock implementations for testing
 type mockFindSpec struct {
 	fields []string
 }

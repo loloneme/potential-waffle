@@ -16,9 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var (
-	validMergeJSON = `{"pull_request_id":"pr-1001"}`
-)
+var validMergeJSON = `{"pull_request_id":"pr-1001"}`
 
 func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(http.MethodPost, "/pullRequest/merge", strings.NewReader(body))
@@ -29,7 +27,6 @@ func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.Respons
 
 func TestHandler_PRMergePost(t *testing.T) {
 	t.Run("successful merge", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -52,10 +49,8 @@ func TestHandler_PRMergePost(t *testing.T) {
 			MergePullRequest(gomock.Any(), "pr-1001", "MERGED").
 			Return(expectedPR, nil)
 
-		// Execute
 		err := handler.PRMergePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -70,7 +65,6 @@ func TestHandler_PRMergePost(t *testing.T) {
 	})
 
 	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -80,10 +74,8 @@ func TestHandler_PRMergePost(t *testing.T) {
 		e := echo.New()
 		c, rec := makeTestRequest(e, "invalid json")
 
-		// Execute
 		err := handler.PRMergePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -94,7 +86,6 @@ func TestHandler_PRMergePost(t *testing.T) {
 	})
 
 	t.Run("service error - PR not found", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -108,10 +99,8 @@ func TestHandler_PRMergePost(t *testing.T) {
 			MergePullRequest(gomock.Any(), "pr-1001", "MERGED").
 			Return(models.PullRequest{}, rpc_errors.NewNotFound("PR not found"))
 
-		// Execute
 		err := handler.PRMergePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 

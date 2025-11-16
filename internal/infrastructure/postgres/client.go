@@ -6,9 +6,8 @@ import (
 	"time"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/jmoiron/sqlx"
-
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
 type Config struct {
@@ -32,7 +31,6 @@ func LoadConfig() (*Config, error) {
 
 func NewFromConfig(ctx context.Context) (*sqlx.DB, error) {
 	cfg, err := LoadConfig()
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %w", err)
 	}

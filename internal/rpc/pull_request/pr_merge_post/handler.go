@@ -29,7 +29,6 @@ func (h *Handler) PRMergePost(ctx echo.Context) error {
 	pr, err := h.mergePRService.MergePullRequest(ctx.Request().Context(),
 		input.PullRequestId,
 		string(generated.PullRequestStatusMERGED))
-
 	if err != nil {
 		return rpc_errors.RespondFromError(ctx, err)
 	}

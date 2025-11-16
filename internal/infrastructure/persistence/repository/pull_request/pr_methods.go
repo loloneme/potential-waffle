@@ -37,12 +37,6 @@ type UpdateSpecification interface {
 	GetReturningFields() []string
 }
 
-type contextExecutor interface {
-	GetContext(ctx context.Context, dest interface{}, query string, args ...any) error
-	SelectContext(ctx context.Context, dest interface{}, query string, args ...any) error
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-}
-
 func getPRValues(pr *models.PullRequest) []interface{} {
 	return []interface{}{
 		pr.ID,
@@ -61,16 +55,15 @@ func (r *Repository) InsertPullRequest(ctx context.Context, tx *sqlx.Tx, pr *mod
 		Values(getPRValues(pr)...).
 		Suffix(fmt.Sprintf("ON CONFLICT (%s) DO NOTHING RETURNING *", r.pullRequestColumns.GetIDField())).
 		ToSql()
-
 	if err != nil {
-		return created, fmt.Errorf("build insert pull request query: %w", err)
+		return created, err
 	}
 
 	if err := tx.GetContext(ctx, &created, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return created, ErrPRAlreadyExists
 		}
-		return created, fmt.Errorf("insert pull request: %w", err)
+		return created, err
 	}
 
 	return created, nil
@@ -89,7 +82,7 @@ func (r *Repository) PullRequestExists(ctx context.Context, prID string) (bool, 
 func (r *Repository) SetPullRequestStatus(ctx context.Context, prID string, statusName string) error {
 	foundStatus, err := r.FindStatus(ctx, status.NewGetStatusByNameSpecification(statusName))
 	if err != nil {
-		return fmt.Errorf("find pull request status: %w", err)
+		return err
 	}
 
 	spec := pr_spec.NewSetStatusSpecification(foundStatus, prID)
@@ -107,13 +100,12 @@ func (r *Repository) UpdatePullRequest(ctx context.Context, spec UpdateSpecifica
 
 	sqlStr, params, err := builder.ToSql()
 	if err != nil {
-		return fmt.Errorf("build update pr: %w", err)
+		return err
 	}
 
 	_, err = r.db.ExecContext(ctx, sqlStr, params...)
-
 	if err != nil {
-		return fmt.Errorf("exec update pr: %w", err)
+		return err
 	}
 
 	return nil
@@ -127,26 +119,25 @@ func (r *Repository) GetPRByID(ctx context.Context, prID string) (models.PullReq
 		From(r.tableName).
 		Where(sq.Eq{r.pullRequestColumns.GetIDField(): prID}).
 		ToSql()
-
 	if err != nil {
-		return pr, fmt.Errorf("build get pull request query: %w", err)
+		return pr, err
 	}
 
 	if err := r.db.GetContext(ctx, &pr, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return pr, ErrPRNotFound
 		}
-		return pr, fmt.Errorf("exec get pull request query: %w", err)
+		return pr, err
 	}
 
 	pr.Status, err = r.FindStatus(ctx, status.NewGetStatusByIDSpecification(pr.StatusID))
 	if err != nil {
-		return models.PullRequest{}, fmt.Errorf("get pull request status: %w", err)
+		return models.PullRequest{}, err
 	}
 
 	pr.Reviewers, err = r.getReviewers(ctx, pr.ID)
 	if err != nil {
-		return models.PullRequest{}, fmt.Errorf("get pull request reviewers: %w", err)
+		return models.PullRequest{}, err
 	}
 
 	return pr, nil
@@ -160,21 +151,20 @@ func (r *Repository) GetPRByIDShort(ctx context.Context, prID string) (models.Pu
 		From(fmt.Sprintf("%s %s", r.tableName, r.pullRequestColumns.GetAlias())).
 		Where(sq.Eq{r.pullRequestColumns.GetIDField(): prID}).
 		ToSql()
-
 	if err != nil {
-		return pr, fmt.Errorf("build get pull request query: %w", err)
+		return pr, err
 	}
 
 	if err := r.db.GetContext(ctx, &pr, query, args...); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return pr, ErrPRNotFound
 		}
-		return pr, fmt.Errorf("exec get pull request query: %w", err)
+		return pr, err
 	}
 
 	pr.Status, err = r.FindStatus(ctx, status.NewGetStatusByIDSpecification(pr.StatusID))
 	if err != nil {
-		return models.PullRequest{}, fmt.Errorf("get pull request status: %w", err)
+		return models.PullRequest{}, err
 	}
 
 	return pr, nil
@@ -186,19 +176,19 @@ func (r *Repository) FindPullRequests(ctx context.Context, spec FindSpecificatio
 
 	sqlStr, params, err := spec.GetRule(queryBuilder).ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("build find pull requests query: %w", err)
+		return nil, err
 	}
 
 	var pullRequests []models.PullRequest
 	err = r.db.SelectContext(ctx, &pullRequests, sqlStr, params...)
 	if err != nil {
-		return nil, fmt.Errorf("exec find pull requests: %w", err)
+		return nil, err
 	}
 
 	for i, pr := range pullRequests {
 		pr, err = r.GetPRByIDShort(ctx, pr.ID)
 		if err != nil {
-			return nil, fmt.Errorf("get pull request: %w", err)
+			return nil, err
 		}
 		pullRequests[i] = pr
 	}

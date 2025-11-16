@@ -16,4 +16,5 @@ type userRepository interface {
 	UserUpdate(ctx context.Context, spec UpdateSpecification) (models.User, error)
 
 	GetUserTeamName(ctx context.Context, userID string) (string, error)
+	BulkDeactivateTeamUsers(ctx context.Context, tx *sqlx.Tx, teamName string) ([]string, error)
 }

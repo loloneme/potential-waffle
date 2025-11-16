@@ -16,9 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var (
-	validSetIsActiveJSON = `{"user_id":"u1","is_active":false}`
-)
+var validSetIsActiveJSON = `{"user_id":"u1","is_active":false}`
 
 func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(http.MethodPost, "/users/setIsActive", strings.NewReader(body))
@@ -29,7 +27,6 @@ func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.Respons
 
 func TestHandler_UsersSetIsActivePost(t *testing.T) {
 	t.Run("successful update", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -50,10 +47,8 @@ func TestHandler_UsersSetIsActivePost(t *testing.T) {
 			UserUpdate(gomock.Any(), gomock.Any()).
 			Return(expectedUser, nil)
 
-		// Execute
 		err := handler.UsersSetIsActivePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, rec.Code)
 
@@ -68,7 +63,6 @@ func TestHandler_UsersSetIsActivePost(t *testing.T) {
 	})
 
 	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -78,10 +72,8 @@ func TestHandler_UsersSetIsActivePost(t *testing.T) {
 		e := echo.New()
 		c, rec := makeTestRequest(e, "invalid json")
 
-		// Execute
 		err := handler.UsersSetIsActivePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -92,7 +84,6 @@ func TestHandler_UsersSetIsActivePost(t *testing.T) {
 	})
 
 	t.Run("service error - user not found", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -106,10 +97,8 @@ func TestHandler_UsersSetIsActivePost(t *testing.T) {
 			UserUpdate(gomock.Any(), gomock.Any()).
 			Return(models.User{}, rpc_errors.NewNotFound("user not found"))
 
-		// Execute
 		err := handler.UsersSetIsActivePost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 

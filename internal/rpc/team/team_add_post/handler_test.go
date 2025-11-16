@@ -16,9 +16,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-var (
-	validTeamJSON = `{"team_name":"team-1","members":[{"user_id":"u1","username":"user1","is_active":true},{"user_id":"u2","username":"user2","is_active":true}]}`
-)
+var validTeamJSON = `{"team_name":"team-1","members":[{"user_id":"u1","username":"user1","is_active":true},{"user_id":"u2","username":"user2","is_active":true}]}`
 
 func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.ResponseRecorder) {
 	req := httptest.NewRequest(http.MethodPost, "/team/add", strings.NewReader(body))
@@ -29,7 +27,6 @@ func makeTestRequest(e *echo.Echo, body string) (echo.Context, *httptest.Respons
 
 func TestHandler_TeamAddPost(t *testing.T) {
 	t.Run("successful creation", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -51,10 +48,8 @@ func TestHandler_TeamAddPost(t *testing.T) {
 			CreateTeam(gomock.Any(), gomock.Any()).
 			Return(expectedTeam, nil)
 
-		// Execute
 		err := handler.TeamAddPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, rec.Code)
 
@@ -69,7 +64,6 @@ func TestHandler_TeamAddPost(t *testing.T) {
 	})
 
 	t.Run("bad request - invalid JSON", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -79,10 +73,8 @@ func TestHandler_TeamAddPost(t *testing.T) {
 		e := echo.New()
 		c, rec := makeTestRequest(e, "invalid json")
 
-		// Execute
 		err := handler.TeamAddPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 
@@ -93,7 +85,6 @@ func TestHandler_TeamAddPost(t *testing.T) {
 	})
 
 	t.Run("service error - team already exists", func(t *testing.T) {
-		// Setup
 		ctrl := gomock.NewController(t)
 		defer ctrl.Finish()
 
@@ -107,10 +98,8 @@ func TestHandler_TeamAddPost(t *testing.T) {
 			CreateTeam(gomock.Any(), gomock.Any()).
 			Return(models.Team{}, rpc_errors.NewTeamExists("team_name already exists"))
 
-		// Execute
 		err := handler.TeamAddPost(c)
 
-		// Assertions
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 

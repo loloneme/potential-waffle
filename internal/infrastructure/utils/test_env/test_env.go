@@ -10,7 +10,6 @@ import (
 )
 
 func NewTestDatabaseConnection(ctx context.Context) (*sqlx.DB, error) {
-
 	cfg := struct {
 		Host     string
 		Port     int

@@ -7,7 +7,7 @@ tags:
   - name: Teams
   - name: Users
   - name: PullRequests
-  - name: Health
+  - name: Stats
 
 components:
   parameters:
@@ -120,6 +120,16 @@ components:
         status:
           type: string
           enum: [OPEN, MERGED]
+    Reassignment:
+      type: object
+      required: [ pull_request_id, old_user_id, new_user_id ]
+      properties:
+        pull_request_id:
+          type: string
+        old_user_id:
+          type: string
+        new_user_id:
+          type: string
 
 paths:
   /team/add:
@@ -236,6 +246,64 @@ paths:
                   is_active: false
         '404':
           description: Пользователь не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /users/bulkDeactivate:
+    post:
+      tags: [Users]
+      summary: Массовая деактивация пользователей команды с безопасным переназначением открытых PR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ team_name, user_ids ]
+              properties:
+                team_name:
+                  type: string
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: Массив ID пользователей для деактивации
+            example:
+              team_name: backend
+              user_ids: [u2, u3]
+      responses:
+        '200':
+          description: Пользователи деактивированы, PR переназначены
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ deactivated_user_ids, reassignments ]
+                properties:
+                  deactivated_user_ids:
+                    type: array
+                    items:
+                      type: string
+                    description: Список деактивированных user_id
+                  reassignments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reassignment'
+                    description: Список переназначений ревьюверов
+              example:
+                deactivated_user_ids: [u2, u3]
+                reassignments:
+                  - pull_request_id: pr-1001
+                    old_user_id: u2
+                    new_user_id: u4
+        '404':
+          description: Команда не найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: Нет доступных ревьюверов для переназначения
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -419,3 +487,50 @@ paths:
                     pull_request_name: Add search
                     author_id: u1
                     status: OPEN
+
+  /statistics:
+    get:
+      tags: [Stats]
+      summary: Получить статистику назначений ревьюверов
+      responses:
+        '200':
+          description: Статистика назначений
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [assignments_by_user, assignments_by_pr]
+                properties:
+                  assignments_by_user:
+                    type: array
+                    items:
+                      type: object
+                      required: [user_id, count]
+                      properties:
+                        user_id:
+                          type: string
+                        count:
+                          type: integer
+                    description: Количество назначений по каждому пользователю
+                  assignments_by_pr:
+                    type: array
+                    items:
+                      type: object
+                      required: [pull_request_id, count]
+                      properties:
+                        pull_request_id:
+                          type: string
+                        count:
+                          type: integer
+                    description: Количество ревьюверов по каждому PR
+              example:
+                assignments_by_user:
+                  - user_id: u2
+                    count: 5
+                  - user_id: u3
+                    count: 3
+                assignments_by_pr:
+                  - pull_request_id: pr-1001
+                    count: 2
+                  - pull_request_id: pr-1002
+                    count: 1

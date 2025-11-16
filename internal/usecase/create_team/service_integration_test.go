@@ -66,7 +66,6 @@ func TestService_CreateTeam_Successful(t *testing.T) {
 	createdTeam, err := env.service.CreateTeam(env.ctx, team)
 	require.NoError(t, err)
 
-	// Проверяем результат
 	assert.Equal(t, teamName, createdTeam.TeamName)
 	assert.Len(t, createdTeam.Members, 3)
 	assert.Equal(t, "user-1", createdTeam.Members[0].ID)
@@ -76,12 +75,10 @@ func TestService_CreateTeam_Successful(t *testing.T) {
 	assert.Equal(t, "user-3", createdTeam.Members[2].ID)
 	assert.False(t, createdTeam.Members[2].IsActive)
 
-	// Проверяем, что команда действительно создана в БД
 	exists, err := env.teamRepo.Exists(env.ctx, teamName)
 	require.NoError(t, err)
 	assert.True(t, exists)
 
-	// Проверяем, что пользователи действительно созданы в БД
 	for _, member := range members {
 		teamNameFromDB, err := env.userRepo.GetUserTeamName(env.ctx, member.ID)
 		require.NoError(t, err)
@@ -101,11 +98,9 @@ func TestService_CreateTeam_EmptyMembers(t *testing.T) {
 	createdTeam, err := env.service.CreateTeam(env.ctx, team)
 	require.NoError(t, err)
 
-	// Проверяем результат
 	assert.Equal(t, teamName, createdTeam.TeamName)
 	assert.Len(t, createdTeam.Members, 0)
 
-	// Проверяем, что команда действительно создана в БД
 	exists, err := env.teamRepo.Exists(env.ctx, teamName)
 	require.NoError(t, err)
 	assert.True(t, exists)
@@ -124,11 +119,9 @@ func TestService_CreateTeam_TeamAlreadyExists(t *testing.T) {
 		Members:  members,
 	}
 
-	// Создаем команду первый раз
 	_, err := env.service.CreateTeam(env.ctx, team)
 	require.NoError(t, err)
 
-	// Пытаемся создать команду с тем же именем, но с другими участниками
 	newMembers := []models.User{
 		{ID: "user-2", Username: "user2", IsActive: true, TeamName: teamName},
 		{ID: "user-3", Username: "user3", IsActive: true, TeamName: teamName},
@@ -139,21 +132,16 @@ func TestService_CreateTeam_TeamAlreadyExists(t *testing.T) {
 		Members:  newMembers,
 	}
 
-	// Согласно логике репозитория, если команда существует, она просто возвращается
-	// и участники обновляются через UpsertUsers
 	createdTeam, err := env.service.CreateTeam(env.ctx, team2)
 	require.NoError(t, err)
 
-	// Проверяем, что команда существует
 	assert.Equal(t, teamName, createdTeam.TeamName)
-	// Участники должны быть обновлены
 	assert.Len(t, createdTeam.Members, 2)
 }
 
 func TestService_CreateTeam_MultipleTeams(t *testing.T) {
 	env := setupTest(t)
 
-	// Создаем первую команду
 	team1Name := "team-1"
 	team1 := &models.Team{
 		TeamName: team1Name,
@@ -166,7 +154,6 @@ func TestService_CreateTeam_MultipleTeams(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, team1Name, createdTeam1.TeamName)
 
-	// Создаем вторую команду
 	team2Name := "team-2"
 	team2 := &models.Team{
 		TeamName: team2Name,
@@ -179,7 +166,6 @@ func TestService_CreateTeam_MultipleTeams(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, team2Name, createdTeam2.TeamName)
 
-	// Проверяем, что обе команды существуют
 	exists1, err := env.teamRepo.Exists(env.ctx, team1Name)
 	require.NoError(t, err)
 	assert.True(t, exists1)

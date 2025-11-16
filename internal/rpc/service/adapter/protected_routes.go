@@ -15,4 +15,5 @@ func RegProtectedAdminRoutes(e *echo.Echo) {
 	admin.POST("/pullRequest/merge", nil)
 	admin.POST("/pullRequest/reassign", nil)
 	admin.POST("/users/setIsActive", nil)
+	admin.POST("/users/bulkDeactivate", nil)
 }

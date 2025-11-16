@@ -6,8 +6,10 @@ import (
 	"github.com/loloneme/potential-waffle/internal/rpc/pull_request/pr_create_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/pull_request/pr_merge_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/pull_request/pr_reassign_post"
+	"github.com/loloneme/potential-waffle/internal/rpc/statistics/statistics_get"
 	"github.com/loloneme/potential-waffle/internal/rpc/team/team_add_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/team/team_get_get"
+	"github.com/loloneme/potential-waffle/internal/rpc/user/users_bulk_deactivate_post"
 	"github.com/loloneme/potential-waffle/internal/rpc/user/users_get_review_get"
 	"github.com/loloneme/potential-waffle/internal/rpc/user/users_set_is_active_post"
 )
@@ -22,6 +24,8 @@ type Adapter struct {
 
 	getUsersReviewHandler *users_get_review_get.Handler
 	setIsActiveHandler    *users_set_is_active_post.Handler
+	bulkDeactivateHandler *users_bulk_deactivate_post.Handler
+	getStatisticsHandler  *statistics_get.Handler
 }
 
 func NewAdapter(
@@ -32,6 +36,8 @@ func NewAdapter(
 	reassignPullRequestHandler *pr_reassign_post.Handler,
 	getUsersReviewHandler *users_get_review_get.Handler,
 	setIsActiveHandler *users_set_is_active_post.Handler,
+	bulkDeactivateHandler *users_bulk_deactivate_post.Handler,
+	getStatisticsHandler *statistics_get.Handler,
 ) *Adapter {
 	return &Adapter{
 		createTeamHandler:          createTeamHandler,
@@ -41,6 +47,8 @@ func NewAdapter(
 		reassignPullRequestHandler: reassignPullRequestHandler,
 		getUsersReviewHandler:      getUsersReviewHandler,
 		setIsActiveHandler:         setIsActiveHandler,
+		bulkDeactivateHandler:      bulkDeactivateHandler,
+		getStatisticsHandler:       getStatisticsHandler,
 	}
 }
 
@@ -70,4 +78,12 @@ func (a *Adapter) GetUsersGetReview(ctx echo.Context, params generated.GetUsersG
 
 func (a *Adapter) PostUsersSetIsActive(ctx echo.Context) error {
 	return a.setIsActiveHandler.UsersSetIsActivePost(ctx)
+}
+
+func (a *Adapter) PostUsersBulkDeactivate(ctx echo.Context) error {
+	return a.bulkDeactivateHandler.UsersBulkDeactivatePost(ctx)
+}
+
+func (a *Adapter) GetStatistics(ctx echo.Context) error {
+	return a.getStatisticsHandler.StatisticsGet(ctx)
 }
