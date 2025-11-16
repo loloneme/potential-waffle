@@ -56,10 +56,10 @@ func (s *Service) BulkDeactivateTeamUsers(ctx context.Context, teamName string, 
 
 	activeTeamUserMap := make(map[string]bool)
 	activeTeamUserIDs := make([]string, 0, len(users))
-	for _, user := range users {
-		if user.IsActive {
-			activeTeamUserMap[user.ID] = true
-			activeTeamUserIDs = append(activeTeamUserIDs, user.ID)
+	for _, u := range users {
+		if u.IsActive {
+			activeTeamUserMap[u.ID] = true
+			activeTeamUserIDs = append(activeTeamUserIDs, u.ID)
 		}
 	}
 
